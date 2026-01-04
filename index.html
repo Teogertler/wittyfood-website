@@ -1336,8 +1336,9 @@
                     <p>Special offers from partners</p>
                 </div>
             </div>
-            <form class="newsletter-form" id="newsletterForm">
-                <input type="email" placeholder="Enter your email" required>
+            <form class="newsletter-form" id="newsletterForm" name="newsletter" method="POST" data-netlify="true">
+                <input type="hidden" name="form-name" value="newsletter">
+                <input type="email" name="email" placeholder="Enter your email" required>
                 <button type="submit" class="btn-primary">Join Waitlist</button>
             </form>
         </div>
@@ -1375,7 +1376,8 @@
             </div>
             <div class="contact-form-container fade-in">
                 <h3>Send us a message</h3>
-                <form class="contact-form" id="contactForm">
+                <form class="contact-form" id="contactForm" name="contact" method="POST" data-netlify="true">
+                    <input type="hidden" name="form-name" value="contact">
                     <div class="form-group">
                         <label for="name">Name</label>
                         <input type="text" id="name" name="name" required>
@@ -1422,14 +1424,73 @@
         </div>
     </footer>
 
+    <!-- Supabase Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
     <script>
-        // Animate progress bar on scroll
+        // Supabase Configuration
+        const SUPABASE_URL = 'https://okuovomeswlionuipfyz.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9rdW92b21lc3dsaW9udWlwZnl6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY0MjQ3NjQsImV4cCI6MjA4MjAwMDc2NH0.tWixr5HJhtvDS7gAHiCUrvtztKMFJTPwjUxMNeoX-_M';
+        
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // Store for live data
+        let liveStats = {
+            restaurants: 5,
+            dishes: 814,
+            cities: 1
+        };
+
+        // Fetch live stats from Supabase
+        async function fetchLiveStats() {
+            try {
+                // Get restaurant count
+                const { count: restaurantCount, error: restaurantError } = await supabase
+                    .from('restaurants')
+                    .select('*', { count: 'exact', head: true });
+                
+                if (!restaurantError && restaurantCount !== null) {
+                    liveStats.restaurants = restaurantCount;
+                }
+
+                // Get dish count
+                const { count: dishCount, error: dishError } = await supabase
+                    .from('restaurant_dishes')
+                    .select('*', { count: 'exact', head: true });
+                
+                if (!dishError && dishCount !== null) {
+                    liveStats.dishes = dishCount;
+                }
+
+                // Get unique cities count
+                const { data: cities, error: cityError } = await supabase
+                    .from('restaurants')
+                    .select('city');
+                
+                if (!cityError && cities) {
+                    const uniqueCities = new Set(cities.map(r => r.city).filter(Boolean));
+                    liveStats.cities = uniqueCities.size || 1;
+                }
+
+                console.log('Live stats loaded:', liveStats);
+                
+                // Update the DOM with fetched values
+                document.getElementById('restaurantCount').textContent = liveStats.restaurants;
+                document.getElementById('dishCount').textContent = liveStats.dishes;
+                document.getElementById('cityCount').textContent = liveStats.cities;
+                
+            } catch (error) {
+                console.error('Error fetching stats:', error);
+            }
+        }
+
+        // Animate progress bar
         function animateProgress() {
             const progressBar = document.getElementById('progressBar');
             const progressPercent = document.getElementById('progressPercent');
             
-            // Calculate progress: 5 restaurants out of goal of 503 for Phase 1
-            const currentRestaurants = 5;
+            // Calculate progress using live restaurant count
+            const currentRestaurants = liveStats.restaurants;
             const goalRestaurants = 503;
             const percent = Math.round((currentRestaurants / goalRestaurants) * 100);
             
@@ -1438,37 +1499,38 @@
         }
 
         // Animate numbers counting up
+        function animateNumber(element, target) {
+            const duration = 2000;
+            const step = target / (duration / 16);
+            let current = 0;
+            
+            const timer = setInterval(() => {
+                current += step;
+                if (current >= target) {
+                    element.textContent = target.toLocaleString();
+                    clearInterval(timer);
+                } else {
+                    element.textContent = Math.floor(current).toLocaleString();
+                }
+            }, 16);
+        }
+
         function animateNumbers() {
-            const counters = document.querySelectorAll('.stat-number');
-            counters.forEach(counter => {
-                const target = parseInt(counter.textContent);
-                if (isNaN(target)) return;
-                
-                counter.textContent = '0';
-                const duration = 2000;
-                const step = target / (duration / 16);
-                let current = 0;
-                
-                const timer = setInterval(() => {
-                    current += step;
-                    if (current >= target) {
-                        counter.textContent = target.toLocaleString();
-                        clearInterval(timer);
-                    } else {
-                        counter.textContent = Math.floor(current).toLocaleString();
-                    }
-                }, 16);
-            });
+            animateNumber(document.getElementById('restaurantCount'), liveStats.restaurants);
+            animateNumber(document.getElementById('dishCount'), liveStats.dishes);
+            animateNumber(document.getElementById('cityCount'), liveStats.cities);
         }
 
         // Intersection Observer for fade-in animations
+        let statsAnimated = false;
         const observer = new IntersectionObserver((entries) => {
             entries.forEach(entry => {
                 if (entry.isIntersecting) {
                     entry.target.classList.add('visible');
                     
                     // Trigger progress animation when progress section is visible
-                    if (entry.target.closest('.progress-section')) {
+                    if (entry.target.closest('.progress-section') && !statsAnimated) {
+                        statsAnimated = true;
                         animateProgress();
                         animateNumbers();
                     }
@@ -1478,17 +1540,53 @@
 
         document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
 
-        // Form submissions
-        document.getElementById('newsletterForm').addEventListener('submit', function(e) {
+        // Form submissions with Netlify
+        document.getElementById('newsletterForm').addEventListener('submit', async function(e) {
             e.preventDefault();
-            alert('Thanks for joining the waitlist! We\'ll be in touch soon. 🎉');
-            this.reset();
+            
+            const form = e.target;
+            const formData = new FormData(form);
+            
+            try {
+                const response = await fetch('/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: new URLSearchParams(formData).toString()
+                });
+                
+                if (response.ok) {
+                    alert('Thanks for joining the waitlist! We\'ll be in touch soon. 🎉');
+                    form.reset();
+                } else {
+                    alert('Something went wrong. Please try again or email us directly.');
+                }
+            } catch (error) {
+                alert('Something went wrong. Please try again or email us directly.');
+            }
         });
 
-        document.getElementById('contactForm').addEventListener('submit', function(e) {
+        document.getElementById('contactForm').addEventListener('submit', async function(e) {
             e.preventDefault();
-            alert('Message sent! We\'ll get back to you shortly. 🍽️');
-            this.reset();
+            
+            const form = e.target;
+            const formData = new FormData(form);
+            
+            try {
+                const response = await fetch('/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: new URLSearchParams(formData).toString()
+                });
+                
+                if (response.ok) {
+                    alert('Message sent! We\'ll get back to you shortly. 🍽️');
+                    form.reset();
+                } else {
+                    alert('Something went wrong. Please try again or email us directly at gertler@wittyfood.com');
+                }
+            } catch (error) {
+                alert('Something went wrong. Please try again or email us directly at gertler@wittyfood.com');
+            }
         });
 
         // Smooth scroll for nav links
@@ -1501,6 +1599,9 @@
                 }
             });
         });
+
+        // Load live stats on page load
+        fetchLiveStats();
     </script>
 </body>
 </html>
