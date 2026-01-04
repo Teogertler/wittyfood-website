@@ -1336,8 +1336,7 @@
                     <p>Special offers from partners</p>
                 </div>
             </div>
-            <form class="newsletter-form" id="newsletterForm" name="newsletter" method="POST" data-netlify="true">
-                <input type="hidden" name="form-name" value="newsletter">
+            <form class="newsletter-form" id="newsletterForm" action="https://formspree.io/f/mvzgvlqk" method="POST">
                 <input type="email" name="email" placeholder="Enter your email" required>
                 <button type="submit" class="btn-primary">Join Waitlist</button>
             </form>
@@ -1376,8 +1375,7 @@
             </div>
             <div class="contact-form-container fade-in">
                 <h3>Send us a message</h3>
-                <form class="contact-form" id="contactForm" name="contact" method="POST" data-netlify="true">
-                    <input type="hidden" name="form-name" value="contact">
+                <form class="contact-form" id="contactForm" action="https://formspree.io/f/mpqwoblw" method="POST">
                     <div class="form-group">
                         <label for="name">Name</label>
                         <input type="text" id="name" name="name" required>
@@ -1540,7 +1538,7 @@
 
         document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
 
-        // Form submissions with Netlify
+        // Form submissions with Formspree
         document.getElementById('newsletterForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
@@ -1548,10 +1546,10 @@
             const formData = new FormData(form);
             
             try {
-                const response = await fetch('/', {
+                const response = await fetch(form.action, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                    body: new URLSearchParams(formData).toString()
+                    body: formData,
+                    headers: { 'Accept': 'application/json' }
                 });
                 
                 if (response.ok) {
@@ -1572,10 +1570,10 @@
             const formData = new FormData(form);
             
             try {
-                const response = await fetch('/', {
+                const response = await fetch(form.action, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                    body: new URLSearchParams(formData).toString()
+                    body: formData,
+                    headers: { 'Accept': 'application/json' }
                 });
                 
                 if (response.ok) {
