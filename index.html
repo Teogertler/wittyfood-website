@@ -1432,7 +1432,7 @@
         const SUPABASE_URL = 'https://okuovomeswlionuipfyz.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9rdW92b21lc3dsaW9udWlwZnl6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY0MjQ3NjQsImV4cCI6MjA4MjAwMDc2NH0.tWixr5HJhtvDS7gAHiCUrvtztKMFJTPwjUxMNeoX-_M';
         
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         // Store for live data
         let liveStats = {
@@ -1445,7 +1445,7 @@
         async function fetchLiveStats() {
             try {
                 // Get restaurant count
-                const { count: restaurantCount, error: restaurantError } = await supabase
+                const { count: restaurantCount, error: restaurantError } = await supabaseClient
                     .from('restaurants')
                     .select('*', { count: 'exact', head: true });
                 
@@ -1454,7 +1454,7 @@
                 }
 
                 // Get dish count
-                const { count: dishCount, error: dishError } = await supabase
+                const { count: dishCount, error: dishError } = await supabaseClient
                     .from('restaurant_dishes')
                     .select('*', { count: 'exact', head: true });
                 
@@ -1463,7 +1463,7 @@
                 }
 
                 // Get unique cities count
-                const { data: cities, error: cityError } = await supabase
+                const { data: cities, error: cityError } = await supabaseClient
                     .from('restaurants')
                     .select('city');
                 
